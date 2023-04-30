@@ -35,6 +35,7 @@ def bitesIntobytes(i, bitDigit):
         binary_str = '{0:032b}'.format(i)
         return bytes(int(binary_str[i:i + 8], 2) for i in range(0, len(binary_str), 8))
 
+
 # =========================================================================================
 def TrailerValue(chunk, i):
     if i != len(chunk) - 1:
@@ -74,7 +75,7 @@ def AddingHeadersToThePackets(picturepath, File_id):
 # =========================================================================================
 def create_socket(port):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.bind(('127.0.0.1', port))
+    s.bind(('192.168.66.81', port))
     return s
 
 
@@ -83,14 +84,15 @@ def create_socket(port):
 def send_packets_to_receiver(packets, window_size, timeout, file_id):
     sock = create_socket(9000)
     unack_packets = packets[:window_size]
-    expectedIds = [AckId(i) for i in window_size]
+    expectedIds = [AckId(i) for i in unack_packets]
     while unack_packets[0]:
         # first [p(0),p(1),p(2),p(3)]
         #       [p1id,p2id,p3id,p4id]
         for i in range(len(unack_packets)):
             if i == 0:
                 sock.settimeout(timeout)
-            sock.sendto(unack_packets[i], ('127.0.0.1', 8000))
+            sock.sendto(unack_packets[i], ('192.168.66.104', 9000))
+            print("packet ",i)
         try:
             ack, addr = sock.recvfrom(1024)
             received_ack_id = AckId(ack)
@@ -129,10 +131,11 @@ window_size = 4  # sliding window size in go back N protocol
 File_id = bitesIntobytes(0, 16)
 flag = 'yes'
 while flag == 'yes':
-    File_name = input("enter the file name")
+    File_name = 'SmallFile.png'
     packets = AddingHeadersToThePackets(File_name, File_id)
-    send_packets_to_receiver(File_name, window_size, 5, file_id)
+    send_packets_to_receiver(packets, window_size, 30, File_id)
     File_id += 1
     flag = input("Do you want to send another file")
 
 # function to get trailer value for a packet
+filename = 'C:\\Users\\fatma taha\\Desktop\\ZC\\Reliable-Transport-Protocol\\SmallFile.png'
