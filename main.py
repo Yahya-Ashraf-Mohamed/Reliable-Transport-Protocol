@@ -35,6 +35,15 @@ def bitesIntobytes(i, bitDigit):
         binary_str = '{0:032b}'.format(i)
         return bytes(int(binary_str[i:i + 8], 2) for i in range(0, len(binary_str), 8))
 
+# =========================================================================================
+def TrailerValue(chunk, i):
+    if i != len(chunk) - 1:
+        return bitesIntobytes(0x0000, 32)
+    else:
+        return bitesIntobytes(0xFFFF, 32)
+
+
+# =========================================================================================
 
 # function to divide picture into packets
 def divide_picture_into_packets(picture_path, max_chunk_size):
