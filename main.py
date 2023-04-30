@@ -1,7 +1,14 @@
-import os
+import socket
+import time
 import struct
 import socket
 from queue import Queue
+import os
+
+
+# function to convert bytes to integer
+def bytes_to_int(b):
+    return int.from_bytes(b, byteorder='big')
 
 
 # =========================================================================================
@@ -29,17 +36,9 @@ def bitesIntobytes(i, bitDigit):
         return bytes(int(binary_str[i:i + 8], 2) for i in range(0, len(binary_str), 8))
 
 
-# =========================================================================================
-def TrailerValue(chunk, i):
-    if i != len(chunk) - 1:
-        return bitesIntobytes(0x0000, 32)
-    else:
-        return bitesIntobytes(0xFFFF, 32)
-
-
-# =========================================================================================
-def DevidingPictureIntoByties(picturePath, max_chunk_size):
-    with open(picturePath, "rb") as img_file:
+# function to divide picture into packets
+def divide_picture_into_packets(picture_path, max_chunk_size):
+    with open(picture_path, "rb") as img_file:
         img_data = img_file.read()
         chunks = []
         max_chunk_bytes = max_chunk_size // 8
@@ -53,7 +52,7 @@ def DevidingPictureIntoByties(picturePath, max_chunk_size):
 
 # =========================================================================================
 def AddingHeadersToThePackets(picturepath, File_id):
-    chunk = DevidingPictureIntoByties(picturepath, max_chunk_size)
+    chunk = divide_picture_into_packets(picturepath, max_chunk_size)
     Packets = []
     for i in range(len(chunk)):
         packetId = bitesIntobytes(i, 16)
@@ -107,13 +106,24 @@ def send_packets_to_receiver(packets, window_size, timeout, file_id):
 
 
 # =========================================================================================
+
+def get_trailer_value(chunks, i):
+    if i != len(chunks) - 1:
+        return bitesIntobytes(0x0000, 32)
+    else:
+        return bitesIntobytes(0xFFFF, 32)
+
+
+# =========================================================================================
 max_chunk_size = 1024  # maximum massage size
 window_size = 4  # sliding window size in go back N protocol
 File_id = bitesIntobytes(0, 16)
-flag='yes'
-while flag=='yes':
+flag = 'yes'
+while flag == 'yes':
     File_name = input("enter the file name")
     packets = AddingHeadersToThePackets(File_name, File_id)
     send_packets_to_receiver(File_name, window_size, 5, file_id)
-    File_id+=1
-    flag=input("Do you want to send another file")
+    File_id += 1
+    flag = input("Do you want to send another file")
+
+# function to get trailer value for a packet
