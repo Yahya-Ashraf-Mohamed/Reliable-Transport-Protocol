@@ -85,39 +85,37 @@ def send_packets_to_receiver(packets, window_size, timeout, file_id):
     unack_packets = packets[:window_size]
     expectedIds = [AckId(i) for i in unack_packets]
     start=0
-    end=4
+    itirator=0
     last_send = -1
-    while unack_packets[-4]:
+    while True:
 
-        for i in range(last_send+1, len(unack_packets)):
-            if i == 0:
-                sock.settimeout(timeout)
-                time.sleep(1)
-            sock.sendto(unack_packets[i], ('localhost', 9999))
-            print("packet ",AckId(unack_packets[i]),'sent')
-            last_send = i
+        # for i in range(last_send+1, len(unack_packets)):
+        #     if i == 0:
+        #         sock.settimeout(timeout)
+        #         time.sleep(1)
+        #     sock.sendto(unack_packets[i], ('localhost', 9999))
+        #     print("packet ",AckId(unack_packets[i]),'sent')
+        #     last_send = i
+        while itirator<start+window_size and itirator <len(packets):
+            sock.sendto(packets[itirator], ('localhost', 9999))
+            itirator+=1
+            print("packet ",AckId(packets[itirator]),'sent')
         try:
             ack, addr = sock.recvfrom(1024*8)
             received_ack_id = AckId(ack)
+            start=received_ack_id+1
             if received_ack_id in expectedIds and file_id == ack[2:]:
                 # if received_ack id within the expected id and the received file id is
                 # corrct
-                start=received_ack_id+1
-                end=4+start
-                expectedIds = [i for i in range(start,end)]  # update the  list of expected ids depending on the
+                expectedIds = [i for i in range(itirator-start)]  # update the  list of expected ids depending on the
                 # received_one
                 last_send -=1
-                unack_packets=unack_packets[1:]
-                if len(packets) > received_ack_id+4 :  # checking wither the packets contains less than the window size
-                    unack_packets.append(packets[received_ack_id+4])
-                else:
-                    # the case when the remaining packets is less that the window size
-                    for i in range(start, len(packets) + start):
-                        unack_packets.append(None)
-
+            print(itirator,AckId(packets[-1][:2]))
+            if itirator==AckId(packets[-1][:2]):
+                break
 
         except socket.timeout:
-            last_send=-1
+            itirator=start
             unack_packets = packets[:window_size]
 
 
