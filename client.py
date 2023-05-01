@@ -49,7 +49,7 @@ file_id_initial=0
 # Loop to receive packets
 while True:
     # Receive a packet
-    packet, client_address =r.recvfrom(1024)
+    packet, client_address =r.recvfrom(1024*8)
     # Parse the packet to extract the header and trailer information and the application data
     packet_header = packet[:4]  # Assuming a 4-byte header
     if AckId(packet_header) == 0:
@@ -70,8 +70,3 @@ while True:
         if packet_trailer == b'\xff\xff':
             Write_Data(filename, data_buffer)
             print("File reception complete.")
-
-# Write the received data to a file
-
-
-# Indicate via the user interface that the file reception is complete
