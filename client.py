@@ -1,9 +1,35 @@
 # function to receive packets from sender
 import socket
 import datetime
-import string
+import matplotlib.pyplot as plt
 
+# =========================================================================================
+def IsRepeated(message_id,id_arr):
+    counter=0
+    for i in range (len(id_arr)):
+        if id_arr[i]==message_id:
+            counter+=1
+    if counter > 1:
+        return True
+    else:
+        return False
+# =========================================================================================
+def transmission_plot(id_arr,time_arr):
+    # Define colors
+    main_color = 'blue'
+    repeat_color = 'red'
+    # Plot the data
+    fig, ax = plt.subplots()
+    for i in range(len(id_arr)):
+        if IsRepeated(i,id_arr)==False:
+            ax.plot(time_arr[i], id_arr[i], '.', markersize=1, color=main_color)
+        else:
+            ax.plot(time_arr[i], id_arr[i], '.', markersize=1, color=main_color)
 
+    plt.xticks(rotation=90,fontsize=7)
+    ax.tick_params(axis='x', which='major', pad=15)
+
+    plt.show()
 # =========================================================================================
 def AckId(RecivedMassage):
     RecivedMassageId = RecivedMassage[:2]
@@ -50,6 +76,7 @@ def bitesIntobytes(i, bitDigit):
 
 # =========================================================================================
 TimeArray = []
+IDs_Array=[]
 port = 9999
 r = create_socket(port)
 # Define the expected packet ID and create a buffer to store received data
@@ -74,10 +101,16 @@ while True:
     # Extract the packet ID from the header
     packet_id = AckId(packet_header)
     # If the packet ID is the expected ID, store the data in the buffer
+
+    #collect the time of receving for each message
+    current_time = datetime.datetime.now().strftime('%M:%S.%f')[:-3] #strftime('%H:%M:%S:%MS')
+    TimeArray.append(current_time)
+
+    #collect the id of each message
+    IDs_Array.append(packet_id)
+
     if packet_id == expected_packet_id :
         data_buffer.append(packet_data)
-        current_time = datetime.datetime.now().strftime('%H:%M:%S')
-        TimeArray.append(current_time)
         expected_packet_id += 1
         r.sendto(packet_header, client_address)
         print('ack with id  sented',packet_header[:2])
@@ -90,4 +123,5 @@ while True:
             print("File reception complete.")
             break
 
-print(TimeArray)
+
+transmission_plot(IDs_Array,TimeArray)
