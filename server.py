@@ -146,18 +146,3 @@ while flag == 'yes':
     File_id = File_id_int.to_bytes(2,'big')
     print(File_id,type(File_id))
     flag = input("Do you want to send another file")
-"""""
-File_name = 'SmallFile.png'
-packets = AddingHeadersToThePackets(File_name, File_id)
-trailer=bitesIntobytes(0xFFFF, 32)
-packet_trailer = packets[-1][-4:]  # Assuming a 4-byte trailer
-print(packet_trailer)
-print(trailer)
-print(packets[-1][:4])
-print(packets[-2][:4])
-if packet_trailer==trailer :
-    print('it is true')
-
-print(AckId( packets[-1][:2]))
-print(AckId( packets[-2][:2]))
-"""""
