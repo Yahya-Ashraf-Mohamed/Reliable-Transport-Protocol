@@ -96,10 +96,11 @@ def send_packets_to_receiver(packets, window_size, timeout, file_id):
         #     sock.sendto(unack_packets[i], ('localhost', 9999))
         #     print("packet ",AckId(unack_packets[i]),'sent')
         #     last_send = i
-        while itirator<start+window_size and itirator <len(packets):
+        while itirator<start+window_size and itirator < len(packets):
             sock.sendto(packets[itirator], ('localhost', 9999))
-            itirator+=1
+
             print("packet ",AckId(packets[itirator]),'sent')
+            itirator += 1
         try:
             ack, addr = sock.recvfrom(1024*8)
             received_ack_id = AckId(ack)
@@ -111,7 +112,8 @@ def send_packets_to_receiver(packets, window_size, timeout, file_id):
                 # received_one
                 last_send -=1
             print(itirator,AckId(packets[-1][:2]))
-            if itirator==AckId(packets[-1][:2]):
+            #if itirator==AckId(packets[-1][:2]):
+            if itirator > len(packets)-1:
                 break
 
         except socket.timeout:
@@ -144,3 +146,18 @@ while flag == 'yes':
     File_id = File_id_int.to_bytes(2,'big')
     print(File_id,type(File_id))
     flag = input("Do you want to send another file")
+"""""
+File_name = 'SmallFile.png'
+packets = AddingHeadersToThePackets(File_name, File_id)
+trailer=bitesIntobytes(0xFFFF, 32)
+packet_trailer = packets[-1][-4:]  # Assuming a 4-byte trailer
+print(packet_trailer)
+print(trailer)
+print(packets[-1][:4])
+print(packets[-2][:4])
+if packet_trailer==trailer :
+    print('it is true')
+
+print(AckId( packets[-1][:2]))
+print(AckId( packets[-2][:2]))
+"""""
