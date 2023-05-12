@@ -64,7 +64,7 @@ def divide_picture_into_packets(picture_path, max_chunk_size):
 
 # =========================================================================================
 def AddingHeadersToThePackets(picturepath, File_id):
-    chunk = divide_picture_into_packets(picturepath, max_chunk_size)
+    chunk = divide_picture_into_packets(picturepath, max_chunk_size-32)
     Packets = []
     for i in range(len(chunk)):
         packetId = bitesIntobytes(i, 16)
@@ -93,6 +93,7 @@ def send_packets_to_receiver(packets, window_size, timeout, file_id):
     last_send = -1
     sock.settimeout(timeout)
     timeout_counter=0
+    retransimission_counter=0
     while True:
         try:
             while itirator<start+window_size and itirator < len(packets):
@@ -120,11 +121,12 @@ def send_packets_to_receiver(packets, window_size, timeout, file_id):
                 break
 
         except socket.timeout:
+            retransimission_counter+=1
             print('time out has occured=====================================================================')
             itirator=start
             unack_packets = packets[:window_size]
             timeout_counter+=1
-            if timeout_counter>3 and window_size>1:
+            if timeout_counter>1 and window_size>1:
                 window_size-=1
                 print(window_size)
                 timeout_counter=0
@@ -141,7 +143,8 @@ def send_packets_to_receiver(packets, window_size, timeout, file_id):
     # Convert the total time to milliseconds
     total_time_ms = int(total_time.total_seconds() * 1000)
     packets_per_second=len(packets)*1000/total_time_ms
-    print(packets_per_second)
+    print('Transimission rate = ',packets_per_second)
+    print('Number of Retransimission = ',retransimission_counter)
 
 
 
@@ -179,9 +182,9 @@ flag = 'yes'
 
 while flag == 'yes':
 
-    File_name = 'SmallFile.png'
+    File_name = 'MediumFile.jpg'
     packets = AddingHeadersToThePackets(File_name, File_id)
-    send_packets_to_receiver(packets, window_size, 0.5, File_id)
+    send_packets_to_receiver(packets, window_size, 0.1, File_id)
     print(File_id,type(File_id))
     File_id_int = int.from_bytes(File_id, 'big') +1
     File_id = File_id_int.to_bytes(2,'big')
