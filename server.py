@@ -94,6 +94,7 @@ def send_packets_to_receiver(packets, window_size, timeout, file_id):
     sock.settimeout(timeout)
     timeout_counter=0
     retransimission_counter=0
+    threathhold=7
     while True:
         try:
             while itirator<start+window_size and itirator < len(packets):
@@ -116,7 +117,8 @@ def send_packets_to_receiver(packets, window_size, timeout, file_id):
                 # received_one
                 print(expectedIds)
                 last_send-=1
-
+                if window_size<threathhold:
+                    window_size += 1
             if itirator > len(packets)-1:
                 break
 
@@ -126,8 +128,8 @@ def send_packets_to_receiver(packets, window_size, timeout, file_id):
             itirator=start
             unack_packets = packets[:window_size]
             timeout_counter+=1
-            if timeout_counter>1 and window_size>1:
-                window_size-=1
+            if timeout_counter>2 and window_size>2:
+                window_size-=2
                 print(window_size)
                 timeout_counter=0
 
@@ -182,7 +184,7 @@ flag = 'yes'
 
 while flag == 'yes':
 
-    File_name = 'MediumFile.jpg'
+    File_name = 'SmallFile.png'
     packets = AddingHeadersToThePackets(File_name, File_id)
     send_packets_to_receiver(packets, window_size, 0.1, File_id)
     print(File_id,type(File_id))
