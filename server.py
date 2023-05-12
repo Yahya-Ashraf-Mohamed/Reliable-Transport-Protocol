@@ -133,21 +133,25 @@ def send_packets_to_receiver(packets, window_size, timeout, file_id):
                 print(window_size)
                 timeout_counter=0
 
-
-
+    print('=========== Transfer Information ===========')
     get_time(start_time,end_time)
     print('Number of Packets= ', len(packets),' packets' )
-    size = sys.getsizeof(packets)
-    print("Size of data= ", size, "bytes")
+    size = numberOfBytes(packets)
+    print("Number of Bytes= ", size, "bytes")
     # Calculate the total time
     total_time = end_time - start_time
 
     # Convert the total time to milliseconds
     total_time_ms = int(total_time.total_seconds() * 1000)
     packets_per_second=len(packets)*1000/total_time_ms
-    print('Transimission rate = ',packets_per_second)
+    print('Transimission rate(packet/sec) = ',packets_per_second , ' packets per second')
+
+    bytes_per_second = size * 1000 / total_time_ms
+    print('Transimission rate(bytes/sec) = ', bytes_per_second, ' bytes per second')
+
     print('Number of Retransimission = ',retransimission_counter)
 
+    print('=========== Transfer Information ===========')
 
 
 # =========================================================================================
@@ -175,6 +179,16 @@ def get_time(start_time,end_time):
     print("End time:", end_time.strftime("%H:%M:%S.%f"))
     print("Total time: {:02d}:{:02d}:{:02d}.{:03d}".format(hours, minutes, seconds, milliseconds))
 
+
+# =========================================================================================
+def numberOfBytes(data):
+    temp=0
+    for i in range(len(data)):
+        if i==len(data)-1:
+            temp=temp+len(data[i])
+        else:
+            temp+=1024
+    return temp
 
 # =========================================================================================
 max_chunk_size = 1024*8  # maximum massage size

@@ -90,7 +90,15 @@ def bitesIntobytes(i, bitDigit):
         binary_str = '{0:032b}'.format(i)
         return bytes(int(binary_str[i:i + 8], 2) for i in range(0, len(binary_str), 8))
 
-
+# =========================================================================================
+def numberOfBytes(data):
+    temp=0
+    for i in range(len(data)):
+        if i==len(data)-1:
+            temp=temp+len(data[i])
+        else:
+            temp+=1024
+    return temp
 
 # =========================================================================================
 TimeArray = []
