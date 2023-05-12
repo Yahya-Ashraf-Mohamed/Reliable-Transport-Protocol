@@ -1,9 +1,11 @@
-import socket
+
 import time
 import struct
 import socket
-from queue import Queue
 import os
+import datetime
+import sys
+import random
 
 
 # function to convert bytes to integer
@@ -85,40 +87,62 @@ def send_packets_to_receiver(packets, window_size, timeout, file_id):
     unack_packets = packets[:window_size]
     expectedIds = [AckId(i) for i in unack_packets]
     start=0
+    start_time=0
+    end_time=0
     itirator=0
     last_send = -1
+    sock.settimeout(timeout)
+    timeout_counter=0
     while True:
-
-        # for i in range(last_send+1, len(unack_packets)):
-        #     if i == 0:
-        #         sock.settimeout(timeout)
-        #         time.sleep(1)
-        #     sock.sendto(unack_packets[i], ('localhost', 9999))
-        #     print("packet ",AckId(unack_packets[i]),'sent')
-        #     last_send = i
-        while itirator<start+window_size and itirator < len(packets):
-            sock.sendto(packets[itirator], ('localhost', 9999))
-
-            print("packet ",AckId(packets[itirator]),'sent')
-            itirator += 1
         try:
+            while itirator<start+window_size and itirator < len(packets):
+                sock.sendto(packets[itirator], ('localhost', 9999))
+                print("packet ", AckId(packets[itirator]), 'sent')
+
+                if itirator == 0:
+                    start_time = datetime.datetime.now()
+                if itirator == len(packets) - 1:
+                    end_time = datetime.datetime.now()
+                itirator += 1
             ack, addr = sock.recvfrom(1024*8)
             received_ack_id = AckId(ack)
-            start=received_ack_id+1
+            print('recived packet ack from packet id ', received_ack_id, 'and start = ', start, 'iterator', itirator)
             if received_ack_id in expectedIds and file_id == ack[2:]:
+                start = received_ack_id + 1
                 # if received_ack id within the expected id and the received file id is
                 # corrct
-                expectedIds = [i for i in range(itirator-start)]  # update the  list of expected ids depending on the
+                expectedIds = [i for i in range(received_ack_id+1,received_ack_id+1+window_size)]  # update the  list of expected ids depending on the
                 # received_one
-                last_send -=1
-            print(itirator,AckId(packets[-1][:2]))
-            #if itirator==AckId(packets[-1][:2]):
+                print(expectedIds)
+                last_send-=1
+
             if itirator > len(packets)-1:
                 break
 
         except socket.timeout:
+            print('time out has occured=====================================================================')
             itirator=start
             unack_packets = packets[:window_size]
+            timeout_counter+=1
+            if timeout_counter>3 and window_size>1:
+                window_size-=1
+                print(window_size)
+                timeout_counter=0
+
+
+
+    get_time(start_time,end_time)
+    print('Number of Packets= ', len(packets),' packets' )
+    size = sys.getsizeof(packets)
+    print("Size of data= ", size, "bytes")
+    # Calculate the total time
+    total_time = end_time - start_time
+
+    # Convert the total time to milliseconds
+    total_time_ms = int(total_time.total_seconds() * 1000)
+    packets_per_second=len(packets)*1000/total_time_ms
+    print(packets_per_second)
+
 
 
 # =========================================================================================
@@ -129,6 +153,23 @@ def get_trailer_value(chunks, i):
     else:
         return bitesIntobytes(0xFFFF, 32)
 
+# =========================================================================================
+#function to get the start and end time
+def get_time(start_time,end_time):
+
+    total_time = end_time - start_time
+
+    # Convert the total time to hours, minutes, seconds, and milliseconds
+    milliseconds = total_time.microseconds // 1000
+    seconds = total_time.seconds
+    minutes, seconds = divmod(seconds, 60)
+    hours, minutes = divmod(minutes, 60)
+
+    # Print the start time, end time, and total time in hours, minutes, seconds, and milliseconds
+    print("Start time:", start_time.strftime("%H:%M:%S.%f"))
+    print("End time:", end_time.strftime("%H:%M:%S.%f"))
+    print("Total time: {:02d}:{:02d}:{:02d}.{:03d}".format(hours, minutes, seconds, milliseconds))
+
 
 # =========================================================================================
 max_chunk_size = 1024*8  # maximum massage size
@@ -137,10 +178,10 @@ File_id = bitesIntobytes(0, 16)
 flag = 'yes'
 
 while flag == 'yes':
-    File_name = 'SmallFile.png'
+
     File_name = 'SmallFile.png'
     packets = AddingHeadersToThePackets(File_name, File_id)
-    send_packets_to_receiver(packets, window_size, 5, File_id)
+    send_packets_to_receiver(packets, window_size, 0.5, File_id)
     print(File_id,type(File_id))
     File_id_int = int.from_bytes(File_id, 'big') +1
     File_id = File_id_int.to_bytes(2,'big')
