@@ -4,6 +4,8 @@ import datetime
 import matplotlib.pyplot as plt
 import sys
 import random
+from PIL import Image
+import io
 
 # =========================================================================================
 def IsRepeated(message_id,id_arr):
@@ -63,10 +65,21 @@ def save_data_as_image(data, output_file):
 
 
 # =========================================================================================
-def Write_Data(filename, data_buffer):
-    with open('received_data.txt', 'wb') as f:
-        for data in data_buffer:
-            f.write(data)
+def Write_Data(data_buffer):
+        with open('received_data.txt', 'wb') as f:
+            for data in data_buffer:
+                f.write(data)
+
+        with open('received_data.txt', 'rb') as f:
+            data = f.read()
+
+        # Load the image from the bytes
+        img = Image.open(io.BytesIO(data))
+
+        # Display the image
+        img.show()
+
+        # display image
 # ========================================================================================
 # function to convert bites to bytes
 def bitesIntobytes(i, bitDigit):
@@ -94,12 +107,17 @@ file_id_initial=0
 trailer=bitesIntobytes(0xFFFF, 32)
 loss_counter=0
 # Loop to receive packets
+
+#time
+start_time=0
+end_time=0
 while True:
     # Receive a packet
     packet, client_address =r.recvfrom(1024*8)
     # Parse the packet to extract the header and trailer information and the application data
     packet_header = packet[:4]  # Assuming a 4-byte header
     if AckId(packet_header) == 0:
+        start_time = datetime.datetime.now()
         file_id_initial=AckFileId(packet_header)
     file_id = AckFileId(packet_header)
     packet_data = packet[4:-4]  # Assuming a trailer of 4 bytes
@@ -117,53 +135,27 @@ while True:
 
     if packet_id == expected_packet_id:
         print('expected packet id is ', expected_packet_id)
-        data_buffer.append(packet_data)
+
         rand_num = random.randint(0, 9)  # generate a random integer between 0 and 9
 
-        if rand_num < 1 and packet_id != 0:
+        if rand_num < 2 and packet_id != 0:
             loss_counter += 1
             continue
 
         print("hola still contining")
         expected_packet_id += 1
+        data_buffer.append(packet_data)
         r.sendto(packet_header, client_address)
         print('ack with id  sented', AckId(packet_header[:2]))
     else:
         print(f"Received out of order packet {packet_id}. Discarding data.")
 
     if packet_trailer == trailer:  # b'\xff\xff':
-        Write_Data(filename, data_buffer)
+        end_time = datetime.datetime.now()
+        Write_Data(data_buffer)
         print(expected_packet_id)
         print("File reception complete.")
+        trailer = 00000
         lostrate = loss_counter / len(IDs_Array)
         transmission_plot(IDs_Array, TimeArray, round(lostrate * 100, 1))
-        """"
-        expected_packet_id += 1
-
-        print("===================================",expected_packet_id)
-
-        rand_num = random.random()
-        scaled_num = rand_num * 10
-        rounded_num = round(scaled_num, 1)
-        if rounded_num < 2 and packet_id != 0:
-            print("i will drop this message")
-            # loss_counter += 1
-            #print('holllllllllllllllllllllllllllllllllllllllllllllllllllllllllllaaaaaaaaaaaaaaaaaaaaaa')
-            continue
-        r.sendto(packet_header, client_address)
-        print('ack with id  sented', packet_header[:2])
-        print(len(data_buffer))
-    else:
-        print(f"Received out of order packet {packet_id}. Discarding data.")
-
-
-
-
-    if packet_trailer == trailer: #b'\xff\xff':
-            Write_Data(filename, data_buffer)
-            print("File reception complete.")
-            break
-
-
-transmission_plot(IDs_Array,TimeArray)
-        """""
+        break
