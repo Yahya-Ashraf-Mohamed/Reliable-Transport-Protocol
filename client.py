@@ -2,6 +2,7 @@
 import socket
 import datetime
 import matplotlib.pyplot as plt
+import random
 
 # =========================================================================================
 def IsRepeated(message_id,id_arr):
@@ -71,6 +72,9 @@ def bitesIntobytes(i, bitDigit):
     if bitDigit == 32:
         binary_str = '{0:032b}'.format(i)
         return bytes(int(binary_str[i:i + 8], 2) for i in range(0, len(binary_str), 8))
+
+# =========================================================================================
+#function to display the transimission data
 
 
 
