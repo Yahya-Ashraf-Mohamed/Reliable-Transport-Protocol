@@ -72,7 +72,7 @@ def divide_picture_into_packets(picture_path, max_chunk_size):
 
 # =========================================================================================
 def AddingHeadersToThePackets(picturepath, File_id):
-    chunk = divide_picture_into_packets(picturepath, max_chunk_size)
+    chunk = divide_picture_into_packets(picturepath, max_chunk_size-32)
     Packets = []
     for i in range(len(chunk)):
         packetId = bitesIntobytes(i, 16)
@@ -100,7 +100,10 @@ def send_packets_to_receiver(packets, window_size, timeout, file_id):
     itirator = 0
     last_send = -1
     sock.settimeout(timeout)
-    timeout_counter = 0
+    timeout_counter=0
+    retransimission_counter=0
+    threathhold=7
+    
     while True:
         try:
             while itirator < start + window_size and itirator < len(packets):
@@ -123,33 +126,48 @@ def send_packets_to_receiver(packets, window_size, timeout, file_id):
                                                 received_ack_id + 1 + window_size)]  # update the  list of expected ids depending on the
                 # received_one
                 print(expectedIds)
-                last_send -= 1
 
-            if itirator > len(packets) - 1:
+                last_send-=1
+                if window_size<threathhold:
+                    window_size += 1
+            if itirator > len(packets)-1:
+
                 break
 
         except socket.timeout:
+            retransimission_counter+=1
             print('time out has occured=====================================================================')
             itirator = start
             unack_packets = packets[:window_size]
-            timeout_counter += 1
-            if timeout_counter > 3 and window_size > 1:
-                window_size -= 1
-                print(window_size)
-                timeout_counter = 0
 
-    get_time(start_time, end_time)
-    print("\n")
-    print('Number of Packets = ', len(packets), ' packets')
-    size = sys.getsizeof(packets)
-    print("Size of data = ", size, "bytes")
+            timeout_counter+=1
+            if timeout_counter>2 and window_size>2:
+                window_size-=2
+                print(window_size)
+                timeout_counter=0
+
+    print('=========== Transfer Information ===========')
+    get_time(start_time,end_time)
+    print('Number of Packets= ', len(packets),' packets' )
+    size = numberOfBytes(packets)
+    print("Number of Bytes= ", size, "bytes")
+
     # Calculate the total time
     total_time = end_time - start_time
 
     # Convert the total time to milliseconds
     total_time_ms = int(total_time.total_seconds() * 1000)
-    packets_per_second = len(packets) * 1000 / total_time_ms
-    print("Num. of packets sent per second: ", packets_per_second, "\n")
+
+    packets_per_second=len(packets)*1000/total_time_ms
+    print('Transimission rate(packet/sec) = ',packets_per_second , ' packets per second')
+
+    bytes_per_second = size * 1000 / total_time_ms
+    print('Transimission rate(bytes/sec) = ', bytes_per_second, ' bytes per second')
+
+    print('Number of Retransimission = ',retransimission_counter)
+
+    print('=========== Transfer Information ===========')
+
 
 
 # =========================================================================================
@@ -180,7 +198,18 @@ def get_time(start_time, end_time):
 
 
 # =========================================================================================
-max_chunk_size = 1024 * 8  # maximum massage size
+def numberOfBytes(data):
+    temp=0
+    for i in range(len(data)):
+        if i==len(data)-1:
+            temp=temp+len(data[i])
+        else:
+            temp+=1024
+    return temp
+
+# =========================================================================================
+max_chunk_size = 1024*8  # maximum massage size
+
 window_size = 4  # sliding window size in go back N protocol
 File_id = bitesIntobytes(0, 16)
 flag = 'yes'
@@ -188,9 +217,11 @@ flag = 'yes'
 while flag == 'yes':
     File_name = GetInputFile()
     packets = AddingHeadersToThePackets(File_name, File_id)
-    send_packets_to_receiver(packets, window_size, 0.5, File_id)
-    print(File_id, type(File_id))
-    File_id_int = int.from_bytes(File_id, 'big') + 1
-    File_id = File_id_int.to_bytes(2, 'big')
-    print(File_id, type(File_id))
-    flag = input("Do you want to send another file? -")
+
+    send_packets_to_receiver(packets, window_size, 0.1, File_id)
+    print(File_id,type(File_id))
+    File_id_int = int.from_bytes(File_id, 'big') +1
+    File_id = File_id_int.to_bytes(2,'big')
+    print(File_id,type(File_id))
+    flag = input("Do you want to send another file")
+
