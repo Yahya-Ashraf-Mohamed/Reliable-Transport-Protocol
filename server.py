@@ -1,4 +1,3 @@
-
 import time
 import struct
 import socket
@@ -6,7 +5,16 @@ import os
 import datetime
 import sys
 import random
+from tkinter import filedialog, messagebox
 
+
+def GetInputFile():
+    try:
+        FileName = filedialog.askopenfilename(initialdir="Home", title="Open CSV File",
+                                              filetypes=(("Image", "*.png *.jpg"),))
+        return FileName
+    except:
+        messagebox.showerror("ERROR", "An Error Occurred!\n")
 
 # function to convert bytes to integer
 def bytes_to_int(b):
@@ -86,18 +94,19 @@ def send_packets_to_receiver(packets, window_size, timeout, file_id):
     sock = create_socket(9000)
     unack_packets = packets[:window_size]
     expectedIds = [AckId(i) for i in unack_packets]
-    start=0
-    start_time=0
-    end_time=0
-    itirator=0
+    start = 0
+    start_time = 0
+    end_time = 0
+    itirator = 0
     last_send = -1
     sock.settimeout(timeout)
     timeout_counter=0
     retransimission_counter=0
     threathhold=7
+    
     while True:
         try:
-            while itirator<start+window_size and itirator < len(packets):
+            while itirator < start + window_size and itirator < len(packets):
                 sock.sendto(packets[itirator], ('localhost', 9999))
                 print("packet ", AckId(packets[itirator]), 'sent')
 
@@ -106,27 +115,31 @@ def send_packets_to_receiver(packets, window_size, timeout, file_id):
                 if itirator == len(packets) - 1:
                     end_time = datetime.datetime.now()
                 itirator += 1
-            ack, addr = sock.recvfrom(1024*8)
+            ack, addr = sock.recvfrom(1024 * 8)
             received_ack_id = AckId(ack)
             print('recived packet ack from packet id ', received_ack_id, 'and start = ', start, 'iterator', itirator)
             if received_ack_id in expectedIds and file_id == ack[2:]:
                 start = received_ack_id + 1
                 # if received_ack id within the expected id and the received file id is
                 # corrct
-                expectedIds = [i for i in range(received_ack_id+1,received_ack_id+1+window_size)]  # update the  list of expected ids depending on the
+                expectedIds = [i for i in range(received_ack_id + 1,
+                                                received_ack_id + 1 + window_size)]  # update the  list of expected ids depending on the
                 # received_one
                 print(expectedIds)
+
                 last_send-=1
                 if window_size<threathhold:
                     window_size += 1
             if itirator > len(packets)-1:
+
                 break
 
         except socket.timeout:
             retransimission_counter+=1
             print('time out has occured=====================================================================')
-            itirator=start
+            itirator = start
             unack_packets = packets[:window_size]
+
             timeout_counter+=1
             if timeout_counter>2 and window_size>2:
                 window_size-=2
@@ -138,11 +151,13 @@ def send_packets_to_receiver(packets, window_size, timeout, file_id):
     print('Number of Packets= ', len(packets),' packets' )
     size = numberOfBytes(packets)
     print("Number of Bytes= ", size, "bytes")
+
     # Calculate the total time
     total_time = end_time - start_time
 
     # Convert the total time to milliseconds
     total_time_ms = int(total_time.total_seconds() * 1000)
+
     packets_per_second=len(packets)*1000/total_time_ms
     print('Transimission rate(packet/sec) = ',packets_per_second , ' packets per second')
 
@@ -154,6 +169,7 @@ def send_packets_to_receiver(packets, window_size, timeout, file_id):
     print('=========== Transfer Information ===========')
 
 
+
 # =========================================================================================
 
 def get_trailer_value(chunks, i):
@@ -162,10 +178,10 @@ def get_trailer_value(chunks, i):
     else:
         return bitesIntobytes(0xFFFF, 32)
 
-# =========================================================================================
-#function to get the start and end time
-def get_time(start_time,end_time):
 
+# =========================================================================================
+# function to get the start and end time
+def get_time(start_time, end_time):
     total_time = end_time - start_time
 
     # Convert the total time to hours, minutes, seconds, and milliseconds
@@ -175,6 +191,7 @@ def get_time(start_time,end_time):
     hours, minutes = divmod(minutes, 60)
 
     # Print the start time, end time, and total time in hours, minutes, seconds, and milliseconds
+    print("\n=================================================================\n")
     print("Start time:", start_time.strftime("%H:%M:%S.%f"))
     print("End time:", end_time.strftime("%H:%M:%S.%f"))
     print("Total time: {:02d}:{:02d}:{:02d}.{:03d}".format(hours, minutes, seconds, milliseconds))
@@ -192,17 +209,19 @@ def numberOfBytes(data):
 
 # =========================================================================================
 max_chunk_size = 1024*8  # maximum massage size
+
 window_size = 4  # sliding window size in go back N protocol
 File_id = bitesIntobytes(0, 16)
 flag = 'yes'
 
 while flag == 'yes':
-
-    File_name = 'SmallFile.png'
+    File_name = GetInputFile()
     packets = AddingHeadersToThePackets(File_name, File_id)
+
     send_packets_to_receiver(packets, window_size, 0.1, File_id)
     print(File_id,type(File_id))
     File_id_int = int.from_bytes(File_id, 'big') +1
     File_id = File_id_int.to_bytes(2,'big')
     print(File_id,type(File_id))
     flag = input("Do you want to send another file")
+
